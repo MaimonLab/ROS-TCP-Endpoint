@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import sys
 
 import rclpy
 
@@ -11,10 +12,15 @@ def main(args=None):
 
     tcp_server.start()
 
-    tcp_server.setup_executor()
-
-    tcp_server.destroy_nodes()
-    rclpy.shutdown()
+    try:
+        tcp_server.setup_executor()
+    except KeyboardInterrupt:
+        pass
+    except BaseException:
+        tcp_server.logerr(f'Exception: {sys.exc_info()}')
+    finally:
+        tcp_server.destroy_nodes()
+        rclpy.shutdown()
 
 
 if __name__ == "__main__":
