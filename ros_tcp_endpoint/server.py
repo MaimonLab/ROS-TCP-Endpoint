@@ -48,20 +48,20 @@ class TcpServer(Node):
         """
         super().__init__(node_name)
 
-        self.declare_parameter("ROS_IP", "0.0.0.0")
-        self.declare_parameter("ROS_TCP_PORT", 10000)
+        self.declare_parameter("ros_ip", "127.0.0.1")
+        self.declare_parameter("ros_port", 5005)
 
         if tcp_ip:
             self.loginfo("Using ROS_IP override from constructor: {}".format(tcp_ip))
             self.tcp_ip = tcp_ip
         else:
-            self.tcp_ip = self.get_parameter("ROS_IP").get_parameter_value().string_value
+            self.tcp_ip = self.get_parameter("ros_ip").get_parameter_value().string_value
 
         if tcp_port:
             self.loginfo("Using ROS_TCP_PORT override from constructor: {}".format(tcp_port))
             self.tcp_port = tcp_port
         else:
-            self.tcp_port = self.get_parameter("ROS_TCP_PORT").get_parameter_value().integer_value
+            self.tcp_port = self.get_parameter("ros_port").get_parameter_value().integer_value
 
         self.unity_tcp_sender = UnityTcpSender(self)
 
@@ -81,10 +81,10 @@ class TcpServer(Node):
             self.publishers_table = publishers
         if subscribers is not None:
             self.subscribers_table = subscribers
-        server_thread = threading.Thread(target=self.listen_loop)
+        # server_thread = threading.Thread(target=self.listen_loop)
         # Exit the server thread when the main thread terminates
-        server_thread.daemon = True
-        server_thread.start()
+        # server_thread.daemon = True
+        # server_thread.start()
 
     def listen_loop(self):
         """

@@ -43,7 +43,7 @@ class ClientThread(threading.Thread):
         self.tcp_server = tcp_server
         self.incoming_ip = incoming_ip
         self.incoming_port = incoming_port
-        threading.Thread.__init__(self)
+        threading.Thread.__init__(self, daemon=True)
 
     @staticmethod
     def recvall(conn, size, flags=0):
