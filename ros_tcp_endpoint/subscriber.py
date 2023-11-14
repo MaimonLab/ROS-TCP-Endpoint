@@ -16,6 +16,7 @@ import rclpy
 import socket
 import re
 
+from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.qos import QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
 from rclpy.qos import QoSProfile
 
@@ -47,7 +48,8 @@ class RosSubscriber(RosReceiver):
 
         # Start Subscriber listener function
         self.subscription = self.create_subscription(
-            self.msg, self.topic, self.send, qos_profile  # queue_size
+            self.msg, self.topic, self.send, qos_profile,
+            callback_group=ReentrantCallbackGroup()
         )
         self.subscription
 

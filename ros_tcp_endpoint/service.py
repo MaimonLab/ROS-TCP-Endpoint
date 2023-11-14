@@ -15,6 +15,7 @@
 import rclpy
 import re
 
+from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.serialization import deserialize_message
 
 from .communication import RosSender
@@ -36,7 +37,8 @@ class RosService(RosSender):
         RosSender.__init__(self, node_name)
 
         self.service_topic = service
-        self.cli = self.create_client(service_class, service)
+        self.cli = self.create_client(
+            service_class, service, callback_group=ReentrantCallbackGroup())
         self.req = service_class.Request()
 
     def send(self, data):
