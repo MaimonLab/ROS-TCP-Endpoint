@@ -12,13 +12,15 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import rclpy
-import socket
+import asyncio
+import importlib
 import json
+import os
+import socket
 import sys
 import threading
-import importlib
 
+import rclpy
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.executors import MultiThreadedExecutor
@@ -55,13 +57,13 @@ class TcpServer(Node):
             self.loginfo("Using ROS_IP override from constructor: {}".format(tcp_ip))
             self.tcp_ip = tcp_ip
         else:
-            self.tcp_ip = self.get_parameter("ros_ip").get_parameter_value().string_value
+            self.tcp_ip = str(self.get_parameter("ros_ip").value)
 
         if tcp_port:
             self.loginfo("Using ROS_TCP_PORT override from constructor: {}".format(tcp_port))
             self.tcp_port = tcp_port
         else:
-            self.tcp_port = self.get_parameter("ros_port").get_parameter_value().integer_value
+            self.tcp_port = int(self.get_parameter("ros_port").value)
 
         self.unity_tcp_sender = UnityTcpSender(self)
 
@@ -148,8 +150,9 @@ class TcpServer(Node):
             + len(self.subscribers_table.keys())
             + len(self.ros_services_table.keys())
             + len(self.unity_services_table.keys())
-            + 1
+            + 6
         )
+        num_threads = min(num_threads, os.cpu_count())
         executor = MultiThreadedExecutor(num_threads)
 
         executor.add_node(self)

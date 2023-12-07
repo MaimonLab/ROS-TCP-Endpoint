@@ -12,12 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import rclpy
-import socket
-import time
-import threading
+import asyncio
 import json
+import socket
+import threading
+import time
 
+import rclpy
 from rclpy.node import Node
 from rclpy.serialization import deserialize_message
 from rclpy.serialization import serialize_message
@@ -54,6 +55,7 @@ class UnityTcpSender:
         self.next_srv_id = 1001
         self.srv_lock = threading.Lock()
         self.services_waiting = {}
+        self.loop = asyncio.new_event_loop()
 
     def send_unity_info(self, text):
         if self.queue is not None:
@@ -93,11 +95,8 @@ class UnityTcpSender:
         if self.queue is None:
             return None
 
-        thread_pauser = ThreadPauser()
-        with self.srv_lock:
-            srv_id = self.next_srv_id
-            self.next_srv_id += 1
-            self.services_waiting[srv_id] = thread_pauser
+        srv_id = self.next_srv_id
+        self.next_srv_id += 1
 
         command = SysCommand_Service()
         command.srv_id = srv_id
@@ -105,20 +104,15 @@ class UnityTcpSender:
         serialized_message = ClientThread.serialize_message(topic, request)
         self.queue.put(b"".join([serialized_header, serialized_message]))
 
-        # rospy starts a new thread for each service request,
-        # so it won't break anything if we sleep now while waiting for the response
-        thread_pauser.sleep_until_resumed()
+        fut = self.loop.create_future()
+        self.services_waiting[srv_id] = (fut, service_class)
 
-        response = deserialize_message(thread_pauser.result, service_class.Response())
-        return response
+        return fut
 
     def send_unity_service_response(self, srv_id, data):
-        thread_pauser = None
-        with self.srv_lock:
-            thread_pauser = self.services_waiting[srv_id]
-            del self.services_waiting[srv_id]
-
-        thread_pauser.resume_with_result(data)
+        fut, service_class = self.services_waiting[srv_id]
+        response = deserialize_message(data, service_class.Response())
+        fut.set_result(response)
 
     def get_registered_topic(self, topic):
         if topic in self.tcp_server.publishers_table:

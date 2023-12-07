@@ -15,6 +15,7 @@
 import rclpy
 import socket
 import re
+import time
 
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.qos import QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
@@ -47,7 +48,7 @@ class UnityService(RosReceiver):
         self.tcp_server = tcp_server
         self.queue_size = queue_size
 
-        qos_profile = QoSProfile(depth=queue_size)
+        qos_profile = QoSProfile(depth=queue_size, reliability=QoSReliabilityPolicy.BEST_EFFORT)
 
         self.service = self.create_service(
             self.service_class, self.topic, self.send,
@@ -64,7 +65,11 @@ class UnityService(RosReceiver):
         Returns:
             The response message
         """
-        return self.tcp_server.send_unity_service(self.topic, self.service_class, request)
+        fut = self.tcp_server.send_unity_service(self.topic, self.service_class, request)
+        while True:
+            if fut.done():
+                return fut.result()
+            time.sleep(0.1)
 
     def unregister(self):
         """
